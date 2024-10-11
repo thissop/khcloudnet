@@ -175,3 +175,4 @@ def download_browse_image(image_output_dir, entity_IDs, missions, operation_numb
         except Exception as e: # if nothing gets downloaded, check what error exception is coming up. Keep track of the ones that throw errors (some images (e.g. 1%) won't be able to be downloaded like this for some reason from experiance. 
             print(e)
             continue 
+

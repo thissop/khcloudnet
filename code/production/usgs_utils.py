@@ -138,7 +138,7 @@ def download_metadata(entity_IDs:list, username:str, password:str, gpkg_name:str
 
     return geometries
 
-def download_browse_image(image_output_dir, entity_IDs, missions, operation_numbers, cameras): 
+def download_browse_image(image_output_dir, entity_IDs, missions, operations_numbers, cameras): 
     r"""
     Downloads browse images from USGS based on specified entity IDs, missions, operation numbers, and cameras, and saves them as JPEG files. The lists should come from your metadata file. 
 
@@ -163,7 +163,7 @@ def download_browse_image(image_output_dir, entity_IDs, missions, operation_numb
             image_path = os.path.join(image_output_dir, file_name) 
 
             if not os.path.exists(image_path):
-                operation_number = ((5-len(k))*'0')+k 
+                operation_number = ((5-len(str(k)))*'0')+str(k) 
                 data_link = f'https://ims.cr.usgs.gov/browse/declass3/{j}/{operation_number}/{l}/{file_name}' 
 
                 # https://ims.cr.usgs.gov/browse/declass3/1213-1/00123/F/D3C1213-100123F001.jpg

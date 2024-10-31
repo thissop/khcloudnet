@@ -58,9 +58,7 @@ def download_browse_images_for_sampling(key_csv: str, n: int, output_csv:str, ou
     operations_numbers = list(sub_df[cols[2]])
     cameras = list(sub_df[cols[3]])
 
-    #def download_browse_image(image_output_dir, entity_IDs, missions, operation_numbers, cameras): 
-    download_browse_image(image_output_dir=output_dir, entity_IDs=entity_IDs, missions=missions,
-                          operations_numbers=operations_numbers, cameras=cameras)
+    download_browse_image(image_output_dir=output_dir, entity_IDs=entity_IDs, missions=missions, operations_numbers=operations_numbers, cameras=cameras)
 
 def split_browse_images(input_dir:str, output_dir:str, scale_factor:int=1, cutout_size:int=None): 
     r'''
@@ -110,7 +108,7 @@ def split_browse_images(input_dir:str, output_dir:str, scale_factor:int=1, cutou
 
                 # Convert cutout to an image and save if it meets size requirements
                 cutout_image = Image.fromarray(cutout)
-                file_name = f'{img.split(".")[0]}-{row_index}_{column_index}.png'
+                file_name = f'{img.split(".")[0]}-{row_index}_{column_index}.jpg'
                 cutout_image.save(os.path.join(output_dir, file_name), compress_level=0)
 
                 column_index += 1 
@@ -226,16 +224,19 @@ def pick_training_cutouts(input_dir:str, output_dir:str, zip_batch_dir:str=None,
     import shutil 
     import random 
     import zipfile
+    from tqdm import tqdm 
 
     entity_IDs = []
 
     for img in os.listdir(input_dir): 
-        img_list = img.split('-')
-        entity_IDs.append(img_list[0]+'-'+img_list[1])
+        if img[0] != ".": # was getting annoying .DS_Store 
+            img_list = img.split('-')#D3C1201-100045F008
+            entity_ID = img_list[0]+'-'+img_list[1]
+            entity_IDs.append(entity_ID)
     
     entity_IDs = list(set(entity_IDs))
 
-    for entity_ID in entity_IDs: 
+    for entity_ID in tqdm(entity_IDs): 
         local_list = []
         for img in os.listdir(input_dir):
             if entity_ID in img: 
@@ -269,23 +270,28 @@ def pick_training_cutouts(input_dir:str, output_dir:str, zip_batch_dir:str=None,
     
 ### EVALUATE EVERYTHING ### 
 
+#print('downloading browse images')
 #key_csv = '/Users/tkiker/Documents/GitHub/khcloudnet/data/filtered_key_df.csv'
-#n = 20
-strips_dir = '/Users/tkiker/Documents/GitHub/khcloudnet/data/declassiii/cloudnet-batch0/strips'
-output_csv = '/Users/tkiker/Documents/GitHub/khcloudnet/data/sampled_rows.csv'
+#n = 10000
+#strips_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/strips'
+#output_csv = '/Users/tkiker/Documents/GitHub/khcloudnet/data/sampled_rows.csv'
 #download_browse_images_for_sampling(key_csv, n, output_csv, strips_dir)
 
-input_dir = strips_dir
-output_dir = '/Users/tkiker/Documents/GitHub/khcloudnet/data/declassiii/cloudnet-batch0/cutouts'
+#input_dir = strips_dir
+output_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/cutouts'
 
+#print('generating cutouts from browse images')
 #split_browse_images(input_dir, output_dir)
 
+#print('plotting strips on map')
 #strips_map_path = '/Users/tkiker/Documents/GitHub/khcloudnet/code/personal/thaddaeus/monthly/oct2024/sampled-data-strip-overlaps.png'
 #plot_strips_on_map(output_csv, strips_map_path)
 
-histograms_plot_path = '/Users/tkiker/Documents/GitHub/khcloudnet/code/personal/thaddaeus/monthly/oct2024/sampled-data-histograms.png'
-plot_summary_histograms(output_csv, strips_dir, histograms_plot_path)
+#print('plotting histograms')
+#histograms_plot_path = '/Users/tkiker/Documents/GitHub/khcloudnet/code/personal/thaddaeus/monthly/oct2024/sampled-data-histograms.png'
+#plot_summary_histograms(output_csv, strips_dir, histograms_plot_path)
 
-annotation_cutouts_dir = '/Users/tkiker/Documents/GitHub/khcloudnet/data/declassiii/cloudnet-batch0/annotation-cutouts'
-zip_batch_dir = '/Users/tkiker/Documents/GitHub/khcloudnet/data/declassiii/cloudnet-batch0/zipped-batches'
+print('batching cutouts')
+annotation_cutouts_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/annotation-cutouts'
+zip_batch_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/zipped-batches'
 pick_training_cutouts(output_dir, annotation_cutouts_dir, zip_batch_dir)

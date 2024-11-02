@@ -219,7 +219,7 @@ def plot_summary_histograms(input_csv:str, strips_dir:str, output_path:str):
     fig.tight_layout()
     plt.savefig(output_path)
 
-def pick_training_cutouts(input_dir:str, output_dir:str, n_cutouts:int=4, zip_batch_dir:str=None, batch_size:int=100, batch_only:bool=False):
+def pick_training_cutouts(input_dir:str, output_dir:str, n_cutouts:int=4, zip_batch_dir:str=None, batch_size:int=80):
     r'''
     
     Note: this code assumes standard file structure in input_dir/output_dir of "EntityID-m_n.IMGTYPE", where EntityID is structured like "D3C1201-100004F017", "m" is the row number of the cutout, "n" is the column number of the cutout, and "IMGTYPE" is something like "png" or "jpeg", e.g.: "D3C1201-100004F017-0_1.png" 
@@ -233,6 +233,12 @@ def pick_training_cutouts(input_dir:str, output_dir:str, n_cutouts:int=4, zip_ba
     from tqdm import tqdm 
     import numpy as np
 
+    if batch_size%2 != 0: 
+        raise Exception("Batch Size Needs to be Divisible by 2")
+
+    if n_cutouts % 2 != 0: 
+        raise Exception("n_cutouts Must be Divisible by 2")
+
     entity_IDs = []
 
     for img in os.listdir(input_dir): 
@@ -240,78 +246,46 @@ def pick_training_cutouts(input_dir:str, output_dir:str, n_cutouts:int=4, zip_ba
             img_list = img.split('-') # D3C1201-100045F008
             entity_ID = img_list[0]+'-'+img_list[1]
             entity_IDs.append(entity_ID)
-    
+
     entity_IDs = list(set(entity_IDs))
+    entity_IDs = random.sample(entity_IDs, len(entity_IDs))
 
-    if not batch_only: 
-        counts = []
-        print('Selecting and Copying Cutouts for Annotation')
-        for entity_ID in tqdm(entity_IDs): 
-            local_list = []
-            count = 0
-            for img in os.listdir(input_dir):
-                if entity_ID in img: 
-                    count+=1
-                    local_list.append(img)
-            counts.append(count)
-            
-            list_to_copy = []
-            if len(local_list) <= n_cutouts: 
-                list_to_copy = local_list
-            else: 
-                list_to_copy = random.sample(local_list, n_cutouts)
+    print('Selecting and Copying Cutouts for Annotation')
 
-            for img in list_to_copy: 
-                old_path = os.path.join(input_dir, img)
-                new_path = os.path.join(output_dir, img)
+    selected_image_paths = []
+    for entity_ID in tqdm(entity_IDs): 
+        local_list = []
+        for img in os.listdir(input_dir):
+            if entity_ID in img: 
+                local_list.append(img)
+        
+        list_to_copy = []
+        len_local_list = len(local_list)
+        if len_local_list == n_cutouts: 
+            list_to_copy = local_list
+        elif len_local_list > n_cutouts: 
+            list_to_copy = random.sample(local_list, n_cutouts)
 
-                if not os.path.exists(new_path):
-                    shutil.copy(old_path, new_path)
+        for img in list_to_copy: 
+            old_path = os.path.join(input_dir, img)
+            new_path = os.path.join(output_dir, img)
+            selected_image_paths.append(new_path)
+
+            if not os.path.exists(new_path):
+                shutil.copy(old_path, new_path)
 
     if zip_batch_dir is not None:
         print('Batching and Compressing Selected Cutouts')
-        if not os.path.exists(zip_batch_dir):
-            os.makedirs(zip_batch_dir, exist_ok=True)
 
-        files = np.sort([f for f in os.listdir(output_dir)])
+        for i in tqdm(range(0, len(selected_image_paths), batch_size)):
+            batch_files = selected_image_paths[i:i + batch_size]
 
-        img_type = None
-        max_row = 0
-        for i, file in enumerate(files[0:50]):
-            if file[0] != ".":
-                if i == 0:
-                    img_type = file.split('.')[-1]
-                
-                row = file.split('-')[-1].split('_')[0]
-                if int(row) > max_row:
-                    max_row = int(row)
-
-        entity_IDs = random.sample(entity_IDs, len(entity_IDs))
-        ordered_file_paths = []
-        for entity_ID in entity_IDs:
-            for i in range(0, n_cutouts):
-                if max_row == 0:
-                    file_path = os.path.join(output_dir, f'{entity_ID}-{max_row}_{i}.png')
-                    if os.path.exists(file_path):
-                        ordered_file_paths.append(file_path)
-                    else:
-                        print(file_path)
-
-                else:
-                    print('max row is not zero')
-                    for j in range(0, max_row):
-                        file_path = os.path.join(output_dir, f'{entity_ID}-{j}_{i}.png')
-                        if os.path.exists(file_path):
-                            ordered_file_paths.append(file_path)
-
-        for i in tqdm(range(0, len(ordered_file_paths), batch_size)):
-            batch_files = ordered_file_paths[i:i + batch_size]
             zip_path = os.path.join(zip_batch_dir, f'batch_{i // batch_size + 1}.zip')
             
             with zipfile.ZipFile(zip_path, 'w') as zipf:
                 for file in batch_files:
                     file_path = os.path.join(output_dir, file)
-                    zipf.write(file_path, arcname=file)
+                    zipf.write(file_path, arcname=os.path.basename(file))
     
 ### EVALUATE EVERYTHING ### 
 
@@ -339,4 +313,4 @@ output_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/cut
 print('batching cutouts')
 annotation_cutouts_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/annotation-cutouts'
 zip_batch_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/zipped-batches'
-pick_training_cutouts(input_dir=output_dir, output_dir=annotation_cutouts_dir, n_cutouts=4, zip_batch_dir=zip_batch_dir, batch_size=100, batch_only=True)
+pick_training_cutouts(input_dir=output_dir, output_dir=annotation_cutouts_dir, n_cutouts=4, zip_batch_dir=zip_batch_dir, batch_size=80)

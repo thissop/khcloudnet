@@ -314,3 +314,11 @@ print('batching cutouts')
 annotation_cutouts_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/annotation-cutouts'
 zip_batch_dir = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/zipped-batches'
 pick_training_cutouts(input_dir=output_dir, output_dir=annotation_cutouts_dir, n_cutouts=4, zip_batch_dir=zip_batch_dir, batch_size=80)
+
+'''
+batching cutouts
+Selecting and Copying Cutouts for Annotation
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████| 9753/9753 [1:11:46<00:00,  2.26it/s]
+Batching and Compressing Selected Cutouts
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████| 488/488 [1:40:01<00:00, 12.30s/it]
+'''

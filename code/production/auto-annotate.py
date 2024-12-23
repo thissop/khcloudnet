@@ -89,7 +89,7 @@ if uploaded_file is not None:
     st.subheader("Histogram of Intensity Values (Cloud Detection)")
 
     max_pixel_value = int(grayscale_image.max())
-    slider_value = st.slider("Cutoff Level for Clouds", int(max_pixel_value*0.5), max_pixel_value, 1)
+    slider_value = st.slider("Cutoff Level for Clouds", int(max_pixel_value*0.1), max_pixel_value, int(0.6*max_pixel_value))
 
     # Update histogram dynamically as the slider moves
     plot_intensity_histogram(grayscale_image, slider_value)

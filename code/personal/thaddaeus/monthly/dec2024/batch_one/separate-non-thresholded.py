@@ -26,6 +26,6 @@ def separate_non_thresholded(thresholded_df, original_dir):
 
 
 thresholded_dir = '/Users/tkiker/Downloads/Threshold Masked Images - Sheet1.csv'
-original_dir = '/Users/tkiker/Desktop/batch_77'
+original_dir = '/Users/tkiker/Desktop/batch_78'
 
 separate_non_thresholded(thresholded_dir, original_dir)

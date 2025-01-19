@@ -22,10 +22,7 @@ def separate_non_thresholded(thresholded_df, original_dir):
                 shutil.copyfile(os.path.join(original_dir, filename), os.path.join(non_thresholded_dir, filename))
 
 
-
-
-
 thresholded_dir = '/Users/tkiker/Downloads/Threshold Masked Images - Sheet1.csv'
-original_dir = '/Users/tkiker/Desktop/batch_78'
+original_dir = '/Users/tkiker/Desktop/batch_74'
 
 separate_non_thresholded(thresholded_dir, original_dir)

@@ -7,18 +7,18 @@ import cv2
 from io import BytesIO
 import os
 
-
-def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=50):
+def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=75):
     """
     Generate a binary mask for cloud regions based on a cutoff level.
     """
+
     data = np.array(input_image.convert('L'))  # Convert to grayscale
 
     # Create a binary mask based on the cutoff level
     binary_mask = np.where(data > cutoff_level, 255, 0).astype(np.uint8)
     
     # Apply morphological operations (closing) to smooth out the mask
-    kernel = np.ones((5, 5), np.uint8)  # Define a 5x5 kernel
+    kernel = np.ones((5, 5), np.uint8) 
     binary_mask_closed = cv2.morphologyEx(binary_mask, cv2.MORPH_CLOSE, kernel)
 
     # Detect connected components
@@ -27,13 +27,12 @@ def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=50):
     # Calculate the size of each connected component
     component_sizes = np.bincount(labels_im.flatten())
 
-    # Create a mask where only components larger than the min_size are kept
     filtered_mask = np.zeros(binary_mask.shape, dtype=np.uint8)
     for label in range(1, num_labels):  # Start from 1 to skip the background label
         if component_sizes[label] >= min_size:
             filtered_mask[labels_im == label] = 255  # Keep this component
 
-    return filtered_mask  # Return the filtered binary mask
+    return filtered_mask 
 
 def plot_intensity_histogram(data, cutoff_level):
     flattened_data = data.flatten()
@@ -41,20 +40,19 @@ def plot_intensity_histogram(data, cutoff_level):
     ax.hist(flattened_data, bins=50, color='black', edgecolor='k', fill=False)
     ax.hist(flattened_data, bins=20, alpha=0.6, color='gray')
 
-    # Add a vertical line to show the cutoff level
+    # Vertical line for cutoff level
     ax.axvline(x=cutoff_level, color='red', linestyle='--', linewidth=2, label=f'Cutoff Level: {cutoff_level}')
 
     ax.set_xlabel('Pixel Intensity')
     ax.set_ylabel('Count')
     ax.set_title('Intensity Histogram')
 
-    # Add legend
     ax.legend()
     
     st.pyplot(fig)
 
 def overlay_images(original_image, binary_mask):
-    # Convert the original image to RGBA
+    # Convert to RGBA
     original_image = original_image.convert("RGBA")
     
     # Create a mask with white (255, 255, 255) for mask areas and transparent background
@@ -63,7 +61,6 @@ def overlay_images(original_image, binary_mask):
     mask_rgba[binary_mask == 255, 3] = 75  # Fully opaque where mask exists
     mask_rgba[binary_mask == 0, 3] = 0  # Fully transparent for background
 
-    # Convert mask_rgba array to an RGBA image
     mask_rgba_img = Image.fromarray(mask_rgba, 'RGBA')
 
     # Overlay the mask on top of the original image with transparency
@@ -118,11 +115,9 @@ if uploaded_file is not None:
         overlay_image = overlay_images(image, binary_mask)
         st.image(overlay_image, caption="Original Image with Cloud Mask Overlay", use_column_width=True)
 
-        # Add button to download the binary mask as a PNG
         st.subheader("Download Cloud Binary Mask")
         mask_img = Image.fromarray(binary_mask)
 
-        # Provide a download button to download the binary mask as a PNG
         buf = BytesIO()
         mask_img.save(buf, format="PNG")
         byte_im = buf.getvalue()

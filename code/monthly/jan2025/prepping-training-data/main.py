@@ -303,18 +303,18 @@ def incorporate_thresholded_masks(threshold_dir:str='/Volumes/My Passport for Ma
     # Estimate Ground Coverage and Make Summary Plots
 
     plt.hist(areas)
-    plt.xlabel('Cutout Annotation Area (Pixels)')
+    plt.xlabel('Cutout Annotation Area (Pixels)', fontsize='large')
     plt.yscale('log')
-    plt.ylabel('Count')
+    plt.ylabel('Count', fontsize='large')
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'coverage-hist-pixelcount.png'), dpi=300)
     plt.clf()
 
     coverage_percentages = 100*np.array(cloud_pixel_counts)/original_cutout_length**2
     plt.hist(coverage_percentages)
-    plt.xlabel(r'Cutout Cloud Cover (%)')
+    plt.xlabel(r'Cutout Cloud Cover (%)', fontsize='large')
     plt.yscale('log')
-    plt.ylabel('Count')
+    plt.ylabel('Count', fontsize='large')
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'coverage-hist-percent.png'), dpi=300)
     plt.clf()
@@ -346,9 +346,9 @@ def incorporate_thresholded_masks(threshold_dir:str='/Volumes/My Passport for Ma
         covered_area_percentages.append(100*area_factor)
 
     plt.scatter(covered_area_kmsqs, covered_area_percentages)
-    plt.xlabel(r'Sampled Area per Strip (km$^2$)')
+    plt.xlabel(r'Sampled Area per Strip (km$^2$)', fontsize='large')
     plt.xlim(0, 0.2*25000)
-    plt.ylabel(r'Percent of Strip Sampled')
+    plt.ylabel(r'Percent of Strip Sampled', fontsize='large')
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'coverage-scatter.png'), dpi=300)
     plt.clf()

@@ -103,11 +103,7 @@ def get_statistics(masks_dir:str='/Volumes/My Passport for Mac/khdata/khcloudnet
 
 get_statistics()
 
-
 ## for some reason, D3C1214-300719F004-0_3.png is causing problems (mask can't be read even though I can open it in finder??)
-                    
-
-
 
 '''
 cloud coverage of cutouts: Mean (%): 17.73680295241116, STD (%): 28.522967619583444

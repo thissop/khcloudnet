@@ -7,3 +7,12 @@ Between the 1960s and 1980s, the CIA captured thousands of extraordinarily high-
 One major challenge researchers face when using this database is selecting which film rolls to purchase. The USGS does not provide estimates of cloud cover on the film strips, forcing researchers to manually inspect each image to ensure it is usable, a time-consuming and inefficient process.
 
 Our project aims to address this issue by analyzing the low-resolution scans to automatically estimate cloud cover. By doing so, we can help researchers more easily identify high-quality film strips with minimal cloud coverage, making their selection process more efficient and cost-effective. We will achieve this by downloading a subset of the low-resolution "browse" scans and training a UNet machine learning model to segment and detect cloud coverage in the images. Once we have trained our UNet model, we will calculate the cloud coverage on the entireity of the dataset, publish our results, and contact USGS for them to incorporate our results into their data selection portal. 
+
+
+## Notes 
+
+### February 11th 
+
+- Thought about paper: maybe we can produce some sort of criterion for concentration of clouds in an image, so like 15% all in one corner is different than 15% evenly distributed? 
+
+- 

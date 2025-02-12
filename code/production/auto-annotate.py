@@ -7,12 +7,12 @@ import cv2
 from io import BytesIO
 import os
 
-def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=75):
+def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=200):
     """
     Generate a binary mask for cloud regions based on a cutoff level.
     """
 
-    data = np.array(input_image.convert('L'))  # Convert to grayscale
+    data = np.array(input_image.convert('L')) 
 
     # Create a binary mask based on the cutoff level
     binary_mask = np.where(data > cutoff_level, 255, 0).astype(np.uint8)
@@ -30,7 +30,7 @@ def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=75):
     filtered_mask = np.zeros(binary_mask.shape, dtype=np.uint8)
     for label in range(1, num_labels):  # Start from 1 to skip the background label
         if component_sizes[label] >= min_size:
-            filtered_mask[labels_im == label] = 255  # Keep this component
+            filtered_mask[labels_im == label] = 255  
 
     return filtered_mask 
 
@@ -52,18 +52,16 @@ def plot_intensity_histogram(data, cutoff_level):
     st.pyplot(fig)
 
 def overlay_images(original_image, binary_mask):
-    # Convert to RGBA
     original_image = original_image.convert("RGBA")
     
     # Create a mask with white (255, 255, 255) for mask areas and transparent background
-    mask_rgba = np.zeros((*binary_mask.shape, 4), dtype=np.uint8)  # Initialize RGBA mask
+    mask_rgba = np.zeros((*binary_mask.shape, 4), dtype=np.uint8)  
     mask_rgba[binary_mask == 255, :3] = [255, 0, 0]  # Red for mask
     mask_rgba[binary_mask == 255, 3] = 75  # Fully opaque where mask exists
     mask_rgba[binary_mask == 0, 3] = 0  # Fully transparent for background
 
     mask_rgba_img = Image.fromarray(mask_rgba, 'RGBA')
 
-    # Overlay the mask on top of the original image with transparency
     blended_image = Image.alpha_composite(original_image, mask_rgba_img)
     return blended_image
 
@@ -91,7 +89,7 @@ if uploaded_file is not None:
     # Update histogram dynamically as the slider moves
     plot_intensity_histogram(grayscale_image, slider_value)
 
-    # Add a button to recalculate the mask
+    # Recalculate the mask
     if st.button("Calculate Cloud Mask"):
         # Step 3: Generate the binary mask for clouds
         binary_mask = autoannotate_clouds(image, slider_value)
@@ -110,7 +108,7 @@ if uploaded_file is not None:
             mask_img = Image.fromarray(binary_mask)
             st.image(mask_img, caption="Binary Mask (Clouds)", use_column_width=True)
 
-        # Step 4: Overlay the mask on the original image and display it below
+        # Step 4: Overlay the mask on the original image and display it
         st.subheader("Overlay of Original Image and Cloud Mask")
         overlay_image = overlay_images(image, binary_mask)
         st.image(overlay_image, caption="Original Image with Cloud Mask Overlay", use_column_width=True)

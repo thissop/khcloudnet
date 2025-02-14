@@ -6,7 +6,7 @@ import cv2
 from io import BytesIO
 import os
 
-def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=250):
+def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=200):
     """
     Generate a binary mask for cloud regions based on a cutoff level.
     """

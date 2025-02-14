@@ -1,19 +1,10 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 from io import BytesIO
 import os
-
-# Directories
-image_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/images"
-mask_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/masks"
-
-# LBP Parameters
-LBP_RADIUS = 1
-LBP_POINTS = 8 * LBP_RADIUS
 
 def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=250):
     """
@@ -78,9 +69,6 @@ st.title("Cloud Auto-Annotate and Histogram App")
 # Step 1: Upload image
 uploaded_file = st.file_uploader("Choose an image (e.g., satellite/cloud image)...", type=["png", "jpg", "jpeg"])
 
-# Step 2: Upload CSV for cloud-specific annotations
-csv_file = st.file_uploader("Upload CSV file with cloud annotation points (x, y, class)...", type=["csv"])
-
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
 
@@ -101,11 +89,6 @@ if uploaded_file is not None:
     if st.button("Calculate Cloud Mask"):
         # Step 3: Generate the binary mask for clouds
         binary_mask = autoannotate_clouds(image, slider_value)
-
-        # If CSV is uploaded, remove points connected to irrelevant regions
-        if csv_file is not None:
-            csv_data = pd.read_csv(csv_file)
-            binary_mask = remove_river_regions(binary_mask, csv_data)
 
         col1, col2 = st.columns(2)
 

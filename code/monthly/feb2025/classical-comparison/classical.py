@@ -8,20 +8,16 @@ from sklearn.mixture import GaussianMixture
 from tqdm import tqdm 
 import smplotlib 
 
-# Directories
 image_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/images"
 mask_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/masks"
 
-# LBP Parameters
 LBP_RADIUS = 1
 LBP_POINTS = 8 * LBP_RADIUS
 
 def extract_features(image):
     """Extract LBP + Gradient (Sobel) features from grayscale image."""
-    # Local Binary Pattern (LBP)
     lbp = local_binary_pattern(image, LBP_POINTS, LBP_RADIUS, method="uniform")
 
-    # Gradient Magnitude using Sobel filter
     sobel_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
     sobel_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
     gradient_magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
@@ -44,39 +40,31 @@ def segment_clouds_kmeans(image):
 
 def compute_cloud_coverage(mask):
     """Compute cloud coverage percentage based on mask (true or predicted)."""
-    cloud_pixels = np.sum(mask > 128)  # Count white pixels in the mask
+    cloud_pixels = np.sum(mask > 128) 
     total_pixels = mask.size
     return (cloud_pixels / total_pixels) * 100
 
-# Lists to store results
 true_coverage_list = []
 predicted_kmeans_list = []
 
-# Process image-mask pairs
-for filename in tqdm(os.listdir(image_dir)[0:100]):
+for filename in tqdm(os.listdir(image_dir)[0:500]):
     if filename.endswith(".png") or filename.endswith(".jpg"):
         image_path = os.path.join(image_dir, filename)
         mask_path = os.path.join(mask_dir, filename)
 
         if os.path.exists(mask_path):
-            # Load grayscale image and mask
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
             mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
-            # Compute true cloud coverage from mask
             true_coverage = compute_cloud_coverage(mask)
             true_coverage_list.append(true_coverage)
 
-            # Compute predicted cloud coverage using K-Means
             segmented_kmeans = segment_clouds_kmeans(image)
             predicted_kmeans = compute_cloud_coverage(segmented_kmeans)
             predicted_kmeans_list.append(predicted_kmeans)
 
 
-# Plot True vs. Predicted Cloud Coverage (K-Means & GMM)
 plt.figure(figsize=(10, 5))
-
-# K-Means Plot
 
 plt.scatter(true_coverage_list, predicted_kmeans_list, alpha=0.7, edgecolors='k', label="K-Means")
 plt.plot([0, 100], [0, 100], 'r--', label="Perfect Prediction")

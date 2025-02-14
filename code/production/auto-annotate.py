@@ -7,7 +7,15 @@ import cv2
 from io import BytesIO
 import os
 
-def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=200):
+# Directories
+image_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/images"
+mask_dir = "/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/masks"
+
+# LBP Parameters
+LBP_RADIUS = 1
+LBP_POINTS = 8 * LBP_RADIUS
+
+def autoannotate_clouds(input_image, cutoff_level: int, min_size:int=250):
     """
     Generate a binary mask for cloud regions based on a cutoff level.
     """

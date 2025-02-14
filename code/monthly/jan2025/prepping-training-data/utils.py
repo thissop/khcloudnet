@@ -24,6 +24,6 @@ def combine_masks(path_one, path_two):
         # Save the image as PNG without compression
         Image.fromarray(merged.astype(np.uint8)).save(path_one, format="PNG", compress_level=0)
 
-path_one = '/Users/tkiker/Downloads/D3C1203-200258A009-0_2-cloud-mask.png'
-path_two = '/Users/tkiker/Downloads/D3C1203-200258A009-0_2-cloud-mask-2.png'
+path_one = '/Users/tkiker/Downloads/D3C1218-100371A019-0_0-cloud-mask.png'
+path_two = '/Users/tkiker/Downloads/D3C1218-100371A019-0_0-cloud-mask-2.png'
 combine_masks(path_one, path_two)

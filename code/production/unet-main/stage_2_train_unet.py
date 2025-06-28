@@ -905,7 +905,7 @@ if __name__ == "__main__":
 
         pool_args = (global_shared_raster_shape, global_shared_anno_boun_shape, global_shared_raster_batch_shape, global_shared_anno_boun_batch_shape, global_shared_raster_count, unet_context, training_frames_count, training_empty_frames_count, validation_frames_count, validation_empty_frames_count)
 
-        debug = False
+        debug = True
         p2 = None
         if debug:
             p2 = Pool(10, initializer=init_pool_global_variables, initargs=pool_args)

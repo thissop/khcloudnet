@@ -10,7 +10,8 @@
 # argv[5 ...]: A list of mosaic bands used with monte carlo training
 
 training_data_fp = "/path/to/base/path"
-training_data_glob_match = "/train_images_10/*_annotation_and_boundary.tif"
+#training_data_glob_match = "/train_images_10/*_annotation_and_boundary.tif"
+training_data_glob_match = "train_images_10/*_annotation_and_boundary.tif"
 #training_data_glob_match = "/*/*_annotation_and_boundary_*.tif" #NOTE(Jesse): This string is appended to training_data_fp and is globbed to locate all matching files under the fp directory.
 
 model_weights_fp = None #NOTE(Jesse): Set to a weights training file for post-train

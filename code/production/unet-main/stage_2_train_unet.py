@@ -682,7 +682,9 @@ if __name__ == "__main__":
 
         rng = Generator(PCG64DXSM(seed=rng_seed))
 
-        training_files = glob(training_data_fp + training_data_glob_match)
+        #training_files = glob(training_data_fp + training_data_glob_match)
+        import os 
+        training_files = glob(os.path.join(training_data_fp, training_data_glob_match))
 
         print(f"Base directory: {training_data_fp}")
         print(f"Glob match: {training_data_glob_match}")

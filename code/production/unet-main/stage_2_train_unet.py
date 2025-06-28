@@ -10,7 +10,8 @@
 # argv[5 ...]: A list of mosaic bands used with monte carlo training
 
 training_data_fp = "/path/to/base/path"
-training_data_glob_match = "/*/*_annotation_and_boundary_*.tif" #NOTE(Jesse): This string is appended to training_data_fp and is globbed to locate all matching files under the fp directory.
+training_data_glob_match = "/train_images_10/*_annotation_and_boundary.tif"
+#training_data_glob_match = "/*/*_annotation_and_boundary_*.tif" #NOTE(Jesse): This string is appended to training_data_fp and is globbed to locate all matching files under the fp directory.
 
 model_weights_fp = None #NOTE(Jesse): Set to a weights training file for post-train
 
@@ -681,7 +682,15 @@ if __name__ == "__main__":
         rng = Generator(PCG64DXSM(seed=rng_seed))
 
         training_files = glob(training_data_fp + training_data_glob_match)
+
+        print(f"Base directory: {training_data_fp}")
+        print(f"Glob match: {training_data_glob_match}")
+        print(f"Full search string: {training_data_fp + training_data_glob_match}")
+        print(f"Training files found: {training_files[:5]}")  # Print first few files to check
+
         training_files_count = len(training_files)
+        print(f"Number of training files found: {training_files_count}")
+
         assert training_files_count > 0
 
         #NOTE(Jesse): Sort then shuffle gives us a deterministic lever to pull.

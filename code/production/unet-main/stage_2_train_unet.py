@@ -909,7 +909,7 @@ if __name__ == "__main__":
         p2 = None
         if debug:
             p2 = Pool(10, initializer=init_pool_global_variables, initargs=pool_args)
-            from unet.visualize import display_images
+            #from unet.visualize import display_images
             batch_queue_index = 0
             while True:
                 batch_base_index = batch_queue_index * (global_shared_raster_batch_shape[0] // global_batch_queue_depth)
@@ -927,7 +927,7 @@ if __name__ == "__main__":
                     ann = anno_batch == 1
                     wei = (anno_batch == 10) * 10
                     wei[wei == 0] = 1
-                    display_images(concatenate((raster_batch, ann, ann + wei), axis=-1), training_data_fp)
+                    #display_images(concatenate((raster_batch, ann, ann + wei), axis=-1), training_data_fp)
                     bob = True
 
                 batch_queue_index = (batch_queue_index + 1) % global_batch_queue_depth

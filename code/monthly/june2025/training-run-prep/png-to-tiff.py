@@ -40,12 +40,15 @@ if __name__ == "__main__":
     base_dir = "/discover/nobackup/tkiker/data/khcloudnet"
 
     # Convert training images
-    convert_png_to_tif(os.path.join(base_dir, "train_images_10"))
+    #convert_png_to_tif(os.path.join(base_dir, "train_images_10"))
 
     # Convert training masks
-    convert_png_to_tif(os.path.join(base_dir, "train_masks_10"))
+    #convert_png_to_tif(os.path.join(base_dir, "train_masks_10"))
 
-    # Optionally: Convert test images
-    convert_png_to_tif(os.path.join(base_dir, "test_images_10"))
+    # Convert test images
+    #convert_png_to_tif(os.path.join(base_dir, "test_images_10"))
+
+    # Convert test masks
+    convert_png_to_tif(os.path.join(base_dir, "test_masks_10"))
 
     print("All conversions completed.")

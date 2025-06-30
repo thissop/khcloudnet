@@ -8,6 +8,8 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from unet_model import UNet_v2
 from loss import focal_tversky, tversky, accuracy, dice_coef
 
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 # ============================
 # Argument Parsing
 # ============================

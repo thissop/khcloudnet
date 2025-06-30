@@ -99,7 +99,7 @@ val_gen = ImageMaskGenerator(val_image_paths, val_mask_paths, args.batch_size, a
 # ============================
 # Model Build
 # ============================
-input_shape = (None, None, 3)
+input_shape = (512, 512, 1)
 model = UNet_v2(input_shape)
 model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tversky, metrics=[dice_coef, accuracy])
 

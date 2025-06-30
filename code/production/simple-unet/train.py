@@ -12,7 +12,8 @@ from loss import focal_tversky, tversky, accuracy, dice_coef
 # Argument Parsing
 # ============================
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', type=str, required=True, help='Path to training data directory')
+parser.add_argument('--train_dir', type=str, required=True, help='Path to training data directory')
+parser.add_argument('--val_dir', type=str, required=True, help='Path to validation data directory')
 parser.add_argument('--epochs', type=int, default=20)
 parser.add_argument('--batch_size', type=int, default=8)
 parser.add_argument('--output', type=str, default='unet_model.weights.h5')
@@ -88,12 +89,11 @@ class ImageMaskGenerator(Sequence):
 # ============================
 # Training Setup
 # ============================
-image_paths, mask_paths = get_image_mask_paths(args.data_dir)
+train_image_paths, train_mask_paths = get_image_mask_paths(args.train_dir)
+val_image_paths, val_mask_paths = get_image_mask_paths(args.val_dir)
 
-# Simple train/val split
-split_idx = int(0.9 * len(image_paths))
-train_gen = ImageMaskGenerator(image_paths[:split_idx], mask_paths[:split_idx], args.batch_size, augment=True)
-val_gen = ImageMaskGenerator(image_paths[split_idx:], mask_paths[split_idx:], args.batch_size, augment=False)
+train_gen = ImageMaskGenerator(train_image_paths, train_mask_paths, args.batch_size, augment=True)
+val_gen = ImageMaskGenerator(val_image_paths, val_mask_paths, args.batch_size, augment=False)
 
 # ============================
 # Model Build

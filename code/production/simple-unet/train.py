@@ -1,10 +1,10 @@
 import os
 import argparse
 import numpy as np
-import cv2
-import keras
-from keras.utils import Sequence
-from keras.callbacks import ModelCheckpoint
+from osgeo import gdal
+import tensorflow as tf
+from tensorflow.keras.utils import Sequence
+from tensorflow.keras.callbacks import ModelCheckpoint
 from unet_model import UNet_v2
 from loss import focal_tversky, tversky, accuracy, dice_coef
 
@@ -35,11 +35,18 @@ def get_image_mask_paths(data_dir):
     return image_paths, mask_paths
 
 def load_image_mask(image_path, mask_path):
-    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.0
-    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    image_ds = gdal.Open(image_path)
+    image = image_ds.ReadAsArray()
+    image = np.moveaxis(image, 0, -1)  # (channels, H, W) to (H, W, channels)
+    image = image / 255.0  # Normalize
+
+    mask_ds = gdal.Open(mask_path)
+    mask = mask_ds.ReadAsArray()
+    if len(mask.shape) == 3:
+        mask = mask[0]  # If multi-band, take the first band
     mask = (mask > 0).astype(np.float32)
     mask = np.expand_dims(mask, axis=-1)
+
     return image, mask
 
 def random_augment(image, mask):
@@ -49,12 +56,6 @@ def random_augment(image, mask):
     if np.random.rand() > 0.5:
         image = np.flipud(image)
         mask = np.flipud(mask)
-    if np.random.rand() > 0.7:
-        angle = np.random.uniform(-15, 15)
-        h, w = image.shape[:2]
-        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1)
-        image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-        mask = cv2.warpAffine(mask, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REFLECT)
     return image, mask
 
 class ImageMaskGenerator(Sequence):
@@ -100,7 +101,7 @@ val_gen = ImageMaskGenerator(val_image_paths, val_mask_paths, args.batch_size, a
 # ============================
 input_shape = (None, None, 3)
 model = UNet_v2(input_shape)
-model.compile(optimizer=keras.optimizers.Adam(), loss=tversky, metrics=[dice_coef, accuracy])
+model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tversky, metrics=[dice_coef, accuracy])
 
 # ============================
 # Training

@@ -108,11 +108,11 @@ model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tversky, metrics=[dice_
 # ============================
 checkpoint = ModelCheckpoint(args.output, save_best_only=True, monitor='val_loss', mode='min', verbose=1)
 
-model.fit(train_gen, 
-          validation_data=val_gen, 
-          epochs=args.epochs, 
-          callbacks=[checkpoint], 
-          use_multiprocessing=True, 
-          workers=4)
+model.fit(
+    train_gen, 
+    validation_data=val_gen, 
+    epochs=args.epochs, 
+    callbacks=[checkpoint]
+)
 
 print(f'Model saved to {args.output}')

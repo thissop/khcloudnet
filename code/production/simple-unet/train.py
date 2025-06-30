@@ -1,10 +1,10 @@
 import os
 import argparse
 import numpy as np
+import cv2
 import keras
-from keras.preprocessing.image import load_img, img_to_array
 from keras.utils import Sequence
-
+from keras.callbacks import ModelCheckpoint
 from unet_model import UNet_v2
 from loss import focal_tversky, tversky, accuracy, dice_coef
 
@@ -26,33 +26,42 @@ def get_image_mask_paths(data_dir):
     image_paths = []
     mask_paths = []
     for f in all_files:
-        if '_annotation_and_boundary' not in f and f.endswith('.tif'):
-            mask = f.replace('.tif', '_annotation_and_boundary.tif')
+        if '_annotation_and_boundary' not in f and f.endswith('.png'):
+            mask = f.replace('.png', '_annotation_and_boundary.png')
             if mask in all_files:
                 image_paths.append(os.path.join(data_dir, f))
                 mask_paths.append(os.path.join(data_dir, mask))
     return image_paths, mask_paths
 
 def load_image_mask(image_path, mask_path):
-    image = img_to_array(load_img(image_path)) / 255.0
-    mask = img_to_array(load_img(mask_path, color_mode='grayscale'))
-    mask = (mask > 0).astype(np.float32)  # Convert mask to 0/1
+    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.0
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    mask = (mask > 0).astype(np.float32)
+    mask = np.expand_dims(mask, axis=-1)
     return image, mask
 
-def random_flip(image, mask):
+def random_augment(image, mask):
     if np.random.rand() > 0.5:
         image = np.fliplr(image)
         mask = np.fliplr(mask)
     if np.random.rand() > 0.5:
         image = np.flipud(image)
         mask = np.flipud(mask)
+    if np.random.rand() > 0.7:
+        angle = np.random.uniform(-15, 15)
+        h, w = image.shape[:2]
+        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1)
+        image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        mask = cv2.warpAffine(mask, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REFLECT)
     return image, mask
 
 class ImageMaskGenerator(Sequence):
-    def __init__(self, image_paths, mask_paths, batch_size):
+    def __init__(self, image_paths, mask_paths, batch_size, augment=True):
         self.image_paths = image_paths
         self.mask_paths = mask_paths
         self.batch_size = batch_size
+        self.augment = augment
         self.indices = np.arange(len(self.image_paths))
         np.random.shuffle(self.indices)
 
@@ -66,7 +75,8 @@ class ImageMaskGenerator(Sequence):
 
         for i in batch_indices:
             image, mask = load_image_mask(self.image_paths[i], self.mask_paths[i])
-            image, mask = random_flip(image, mask)
+            if self.augment:
+                image, mask = random_augment(image, mask)
             batch_images.append(image)
             batch_masks.append(mask)
 
@@ -79,7 +89,11 @@ class ImageMaskGenerator(Sequence):
 # Training Setup
 # ============================
 image_paths, mask_paths = get_image_mask_paths(args.data_dir)
-train_gen = ImageMaskGenerator(image_paths, mask_paths, args.batch_size)
+
+# Simple train/val split
+split_idx = int(0.9 * len(image_paths))
+train_gen = ImageMaskGenerator(image_paths[:split_idx], mask_paths[:split_idx], args.batch_size, augment=True)
+val_gen = ImageMaskGenerator(image_paths[split_idx:], mask_paths[split_idx:], args.batch_size, augment=False)
 
 # ============================
 # Model Build
@@ -91,6 +105,13 @@ model.compile(optimizer=keras.optimizers.Adam(), loss=tversky, metrics=[dice_coe
 # ============================
 # Training
 # ============================
-model.fit(train_gen, epochs=args.epochs)
-model.save_weights(args.output)
+checkpoint = ModelCheckpoint(args.output, save_best_only=True, monitor='val_loss', mode='min', verbose=1)
+
+model.fit(train_gen, 
+          validation_data=val_gen, 
+          epochs=args.epochs, 
+          callbacks=[checkpoint], 
+          use_multiprocessing=True, 
+          workers=4)
+
 print(f'Model saved to {args.output}')

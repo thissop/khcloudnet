@@ -1,7 +1,7 @@
 import os
 import argparse
 import numpy as np
-from osgeo import gdal
+import cv2
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 from tensorflow.keras.callbacks import ModelCheckpoint
@@ -16,7 +16,7 @@ parser.add_argument('--train_dir', type=str, required=True, help='Path to traini
 parser.add_argument('--val_dir', type=str, required=True, help='Path to validation data directory')
 parser.add_argument('--epochs', type=int, default=20)
 parser.add_argument('--batch_size', type=int, default=8)
-parser.add_argument('--output', type=str, default='unet_model.weights.h5')
+parser.add_argument('--output', type=str, default='unet_model.keras')
 args = parser.parse_args()
 
 # ============================
@@ -35,15 +35,11 @@ def get_image_mask_paths(data_dir):
     return image_paths, mask_paths
 
 def load_image_mask(image_path, mask_path):
-    image_ds = gdal.Open(image_path)
-    image = image_ds.ReadAsArray()
-    image = np.moveaxis(image, 0, -1)  # (channels, H, W) to (H, W, channels)
-    image = image / 255.0  # Normalize
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    image = image.astype(np.float32) / 255.0
+    image = np.expand_dims(image, axis=-1)
 
-    mask_ds = gdal.Open(mask_path)
-    mask = mask_ds.ReadAsArray()
-    if len(mask.shape) == 3:
-        mask = mask[0]  # If multi-band, take the first band
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
     mask = (mask > 0).astype(np.float32)
     mask = np.expand_dims(mask, axis=-1)
 
@@ -53,13 +49,29 @@ def random_augment(image, mask):
     if np.random.rand() > 0.5:
         image = np.fliplr(image)
         mask = np.fliplr(mask)
+
     if np.random.rand() > 0.5:
         image = np.flipud(image)
         mask = np.flipud(mask)
+
+    if np.random.rand() > 0.7:
+        angle = np.random.uniform(-15, 15)
+        h, w = image.shape[:2]
+        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1)
+        image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        mask = cv2.warpAffine(mask, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REFLECT)
+        image = np.expand_dims(image, axis=-1)
+        mask = np.expand_dims(mask, axis=-1)
+
+    if np.random.rand() > 0.7:
+        factor = np.random.uniform(0.8, 1.2)
+        image = np.clip(image * factor, 0, 1)
+
     return image, mask
 
 class ImageMaskGenerator(Sequence):
-    def __init__(self, image_paths, mask_paths, batch_size, augment=True):
+    def __init__(self, image_paths, mask_paths, batch_size, augment=True, **kwargs):
+        super().__init__(**kwargs)
         self.image_paths = image_paths
         self.mask_paths = mask_paths
         self.batch_size = batch_size
@@ -109,9 +121,9 @@ model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tversky, metrics=[dice_
 checkpoint = ModelCheckpoint(args.output, save_best_only=True, monitor='val_loss', mode='min', verbose=1)
 
 model.fit(
-    train_gen, 
-    validation_data=val_gen, 
-    epochs=args.epochs, 
+    train_gen,
+    validation_data=val_gen,
+    epochs=args.epochs,
     callbacks=[checkpoint]
 )
 

@@ -1,25 +1,40 @@
 import os
-import argparse
 import numpy as np
 import cv2
-import keras
+import tensorflow as tf
+from tensorflow import keras
 from keras.optimizers import AdamW
 from keras.callbacks import ModelCheckpoint
+from keras.utils import Sequence
 from unet_model import UNet_v2
 from loss import focal_tversky, tversky, accuracy, dice_coef
 
+# Configure for Apple Silicon GPU (Metal Performance Shaders)
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+# Check if GPUs are available and configure memory growth
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f"GPUs detected: {gpus}")
+    # Set memory growth to prevent OOM
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+        print(f"Memory growth enabled for {gpu}")
+else:
+    print("No GPU detected. Running on CPU.")
+
 # ============================
-# Argument Parsing
+# Local Data Paths
 # ============================
-parser = argparse.ArgumentParser()
-parser.add_argument('--train_dir', type=str, required=True, help='Path to training data directory')
-parser.add_argument('--val_dir', type=str, required=True, help='Path to validation data directory')
-parser.add_argument('--epochs', type=int, default=20)
-parser.add_argument('--batch_size', type=int, default=8)
-parser.add_argument('--output', type=str, default='unet_model.keras')
-args = parser.parse_args()
+TRAIN_DIR = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/khcloudnet_train_10'
+VAL_DIR = '/Volumes/My Passport for Mac/khdata/khcloudnet/cloudnet-batch0/training-ready/khcloudnet_test_10'
+
+# ============================
+# Training Parameters
+# ============================
+EPOCHS = 20
+BATCH_SIZE = 8  # Reduced for MacBook memory
+OUTPUT_MODEL = 'unet_local_model.keras'
 
 # ============================
 # Dataset Loader
@@ -62,7 +77,7 @@ def random_augment(image, mask):
         dx = np.random.randint(-max_shift, max_shift)
         dy = np.random.randint(-max_shift, max_shift)
         h, w = image.shape[:2]
-        M = np.float32([[1, 0, dx], [0, 1, dy]])
+        M = np.array([[1, 0, dx], [0, 1, dy]], dtype=np.float32)
         image = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
         mask = cv2.warpAffine(mask, M, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REFLECT)
         image = np.expand_dims(image, axis=-1)
@@ -83,7 +98,7 @@ def random_augment(image, mask):
 
     return image, mask
 
-class ImageMaskGenerator:
+class ImageMaskGenerator(Sequence):
     def __init__(self, image_paths, mask_paths, batch_size, augment=True):
         self.image_paths = image_paths
         self.mask_paths = mask_paths
@@ -113,32 +128,72 @@ class ImageMaskGenerator:
         np.random.shuffle(self.indices)
 
 # ============================
-# Training Setup
+# Main Training Function
 # ============================
-train_image_paths, train_mask_paths = get_image_mask_paths(args.train_dir)
-val_image_paths, val_mask_paths = get_image_mask_paths(args.val_dir)
+def main():
+    print("=== Starting Local Training (Simplified) ===")
+    print(f"Training directory: {TRAIN_DIR}")
+    print(f"Validation directory: {VAL_DIR}")
+    print(f"Epochs: {EPOCHS}")
+    print(f"Batch size: {BATCH_SIZE}")
+    
+    # Check if data directories exist
+    if not os.path.exists(TRAIN_DIR):
+        print(f"Error: Training directory not found: {TRAIN_DIR}")
+        return
+    
+    if not os.path.exists(VAL_DIR):
+        print(f"Error: Validation directory not found: {VAL_DIR}")
+        return
 
-train_gen = ImageMaskGenerator(train_image_paths, train_mask_paths, args.batch_size, augment=True)
-val_gen = ImageMaskGenerator(val_image_paths, val_mask_paths, args.batch_size, augment=False)
+    # ============================
+    # Training Setup
+    # ============================
+    print("Loading training data...")
+    train_image_paths, train_mask_paths = get_image_mask_paths(TRAIN_DIR)
+    print(f"Found {len(train_image_paths)} training images")
+    
+    print("Loading validation data...")
+    val_image_paths, val_mask_paths = get_image_mask_paths(VAL_DIR)
+    print(f"Found {len(val_image_paths)} validation images")
 
-# ============================
-# Model Build
-# ============================
-input_shape = (512, 512, 1)
-model = UNet_v2(input_shape)
+    if len(train_image_paths) == 0:
+        print("Error: No training images found!")
+        return
+    
+    if len(val_image_paths) == 0:
+        print("Error: No validation images found!")
+        return
 
-model.compile(optimizer=AdamW(learning_rate=1e-3, weight_decay=1e-5), loss=tversky, metrics=[dice_coef, accuracy])
+    train_gen = ImageMaskGenerator(train_image_paths, train_mask_paths, BATCH_SIZE, augment=True)
+    val_gen = ImageMaskGenerator(val_image_paths, val_mask_paths, BATCH_SIZE, augment=False)
 
-# ============================
-# Training
-# ============================
-checkpoint = ModelCheckpoint(args.output, save_best_only=True, monitor='val_loss', mode='min', verbose=1)
+    # ============================
+    # Model Build
+    # ============================
+    print("Building model...")
+    input_shape = (512, 512, 1)
+    model = UNet_v2(input_shape)
+    print("Model built successfully")
 
-model.fit(
-    train_gen,
-    validation_data=val_gen,
-    epochs=args.epochs,
-    callbacks=[checkpoint]
-)
+    model.compile(optimizer=AdamW(learning_rate=1e-3, weight_decay=1e-5), loss=tversky, metrics=[dice_coef, accuracy])
 
-print(f'Model saved to {args.output}')
+    # ============================
+    # Training
+    # ============================
+    print("Starting training...")
+    checkpoint = ModelCheckpoint(OUTPUT_MODEL, save_best_only=True, monitor='val_loss', mode='min', verbose=1)
+
+    history = model.fit(
+        train_gen,
+        validation_data=val_gen,
+        epochs=EPOCHS,
+        callbacks=[checkpoint],
+        verbose="auto"
+    )
+
+    print(f'Model saved to {OUTPUT_MODEL}')
+    print("=== Training Complete ===")
+
+if __name__ == "__main__":
+    main() 

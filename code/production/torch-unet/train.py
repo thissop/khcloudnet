@@ -4,11 +4,12 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, random_split
 import torchvision.transforms.functional as TF
 from unet import UNet
-from loss import dice_loss
+from loss import tversky
 import numpy as np
 import os
 from PIL import Image
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import GradScaler
+from torch import amp
 import argparse
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -72,9 +73,9 @@ def compute_validation_loss(val_loader, model, criterion, device):
             images = images.to(device)
             masks = masks.to(device)
 
-            with autocast():
+            with amp.autocast("cuda"):
                 outputs = model(images)
-                loss = criterion(outputs, masks) + dice_loss(outputs, masks)
+                loss = criterion(outputs, masks) + tversky(outputs, masks)
 
             val_loss += loss.item()
 
@@ -114,9 +115,9 @@ def train_model(args):
 
             optimizer.zero_grad()
 
-            with autocast():
+            with amp.autocast("cuda"):
                 outputs = model(images)
-                loss = criterion(outputs, masks) + dice_loss(outputs, masks)
+                loss = criterion(outputs, masks) + tversky(outputs, masks)
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)

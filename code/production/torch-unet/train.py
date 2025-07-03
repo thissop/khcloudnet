@@ -8,7 +8,6 @@ from loss import tversky
 import numpy as np
 import os
 from PIL import Image
-from torch.cuda.amp import GradScaler
 from torch import amp
 import argparse
 
@@ -91,8 +90,8 @@ def train_model(args):
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=7)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=7)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -101,7 +100,7 @@ def train_model(args):
     optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
 
-    scaler = GradScaler()
+    scaler = amp.GradScaler("cuda")
     num_epochs = args.epochs
     best_val_loss = float('inf')
 

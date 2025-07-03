@@ -16,8 +16,6 @@ print(f"Using device: {device}")
 
 if device.type == 'cuda':
     print(f"GPU name: {torch.cuda.get_device_name(0)}")
-    print(f"Memory Allocated: {torch.cuda.memory_allocated(0) / 1024 ** 3:.2f} GB")
-    print(f"Memory Reserved: {torch.cuda.memory_reserved(0) / 1024 ** 3:.2f} GB")
 else:
     print("Running on CPU.")
 
@@ -80,6 +78,40 @@ def compute_validation_loss(val_loader, model, criterion, device):
 
     return val_loss / len(val_loader)
 
+def compute_validation_metrics(val_loader, model, criterion, device):
+    model.eval()
+    val_loss = 0.0
+    total_dice = 0.0
+    total_accuracy = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for images, masks in val_loader:
+            images = images.to(device)
+            masks = masks.to(device)
+
+            with amp.autocast("cuda"):
+                outputs = model(images)
+                loss = criterion(outputs, masks) + tversky(outputs, masks)
+
+            val_loss += loss.item()
+
+            preds = torch.sigmoid(outputs)
+            preds = (preds > 0.5).float()
+
+            dice_score = (2 * (preds * masks).sum()) / ((preds + masks).sum() + 1e-8)
+            accuracy = (preds == masks).float().mean()
+
+            total_dice += dice_score.item()
+            total_accuracy += accuracy.item()
+            num_batches += 1
+
+    avg_loss = val_loss / num_batches
+    avg_dice = total_dice / num_batches
+    avg_accuracy = total_accuracy / num_batches
+
+    return avg_loss, avg_dice, avg_accuracy
+
 # =========================
 # Training Loop
 # =========================
@@ -108,7 +140,7 @@ def train_model(args):
         model.train()
         epoch_loss = 0.0
 
-        for images, masks in train_loader:
+        for batch_idx, (images, masks) in enumerate(train_loader):
             images = images.to(device)
             masks = masks.to(device)
 
@@ -124,11 +156,17 @@ def train_model(args):
 
             epoch_loss += loss.item()
 
+            if batch_idx == 0:
+                print(f"Memory Allocated After First Batch: {torch.cuda.memory_allocated(0) / 1024 ** 3:.2f} GB")
+                print(f"Memory Reserved After First Batch: {torch.cuda.memory_reserved(0) / 1024 ** 3:.2f} GB")
+
         avg_train_loss = epoch_loss / len(train_loader)
-        val_loss = compute_validation_loss(val_loader, model, criterion, device)
+        #val_loss = compute_validation_loss(val_loader, model, criterion, device)
+        val_loss, val_dice, val_accuracy = compute_validation_metrics(val_loader, model, criterion, device)
+        print(f"Epoch {epoch+1}/{num_epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {val_loss:.4f} - Val Dice: {val_dice:.4f} - Val Acc: {val_accuracy:.4f}")
         scheduler.step(val_loss)
 
-        print(f"Epoch {epoch+1}/{num_epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {val_loss:.4f}")
+        #print(f"Epoch {epoch+1}/{num_epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {val_loss:.4f}")
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss

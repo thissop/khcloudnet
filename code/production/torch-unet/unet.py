@@ -29,7 +29,8 @@ class AttentionBlock(nn.Module):
         inter_channels = in_channels // 4
         self.theta = nn.Conv2d(in_channels, inter_channels, kernel_size=1)
         self.phi = nn.Conv2d(in_channels, inter_channels, kernel_size=1)
-        self.psi = nn.Conv2d(1, 1, kernel_size=1)
+        self.psi = nn.Conv2d(inter_channels, 1, kernel_size=1)
+        #self.psi = nn.Conv2d(1, 1, kernel_size=1)
 
         self.act = nn.PReLU()
         self.sigmoid = nn.Sigmoid()

@@ -2,7 +2,8 @@
 #
 #SBATCH -A astro                 # Set Account name
 #SBATCH --job-name=nasatrain      # The job name
-#SBATCH --gres=gpu:1             # Request 1 GPU
+#SBATCH --gres=gpu:2             # Request 1 GPU
+#SBATCH --constraint=a100
 #SBATCH -c 8                     # The number of CPU cores
 #SBATCH -t 0-12:00               # Runtime in D-HH:MM
 #SBATCH --mem-per-cpu=5G         # Memory per CPU core              

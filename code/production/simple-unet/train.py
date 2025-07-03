@@ -11,9 +11,6 @@ from loss import focal_tversky, tversky, accuracy, dice_coef
 import tensorflow as tf 
 
 # Disable JIT compilation to avoid libdevice issues
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
-os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/usr/local/cuda'
 
 # Disable JIT compilation
 tf.config.optimizer.set_jit(False)
